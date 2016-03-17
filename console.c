@@ -14,6 +14,11 @@
 #include "proc.h"
 #include "x86.h"
 
+#define LEFT_ARROW 228
+#define RIGHT_ARROW 229
+#define DOWN_ARROW 227
+#define UP_ARROW 226
+
 static void consputc(int);
 
 static int panicked = 0;
@@ -107,7 +112,7 @@ panic(char *s)
 {
   int i;
   uint pcs[10];
-  
+
   cli();
   cons.locking = 0;
   cprintf("cpu%d: panic: ", cpu->id);
@@ -130,34 +135,50 @@ static void
 cgaputc(int c)
 {
   int pos;
-  
+
   // Cursor position: col + 80*row.
   outb(CRTPORT, 14);
   pos = inb(CRTPORT+1) << 8;
   outb(CRTPORT, 15);
   pos |= inb(CRTPORT+1);
 
-  if(c == '\n')
-    pos += 80 - pos%80;
-  else if(c == BACKSPACE){
-    if(pos > 0) --pos;
-  } else
-    crt[pos++] = (c&0xff) | 0x0700;  // black on white
+  switch(c) {
+    case '\n':
+      pos += 80 - pos%80;
+      break;
+    case BACKSPACE:
+      if(pos > 0) --pos;
+      break;
+    case LEFT_ARROW:
+      pos--;
+      //crt[pos] = crt[pos] | 0x0700;
+      break;
+    default:
+      crt[pos++] = (c&0xff) | 0x0700;  // black on white
+  }
+
+  // if(c == '\n')
+  //   pos += 80 - pos%80;
+  // else if(c == BACKSPACE){
+  //   if(pos > 0) --pos;
+  // } else
+  //   crt[pos++] = (c&0xff) | 0x0700;  // black on white
 
   if(pos < 0 || pos > 25*80)
     panic("pos under/overflow");
-  
+
   if((pos/80) >= 24){  // Scroll up.
     memmove(crt, crt+80, sizeof(crt[0])*23*80);
     pos -= 80;
     memset(crt+pos, 0, sizeof(crt[0])*(24*80 - pos));
   }
-  
+
   outb(CRTPORT, 14);
   outb(CRTPORT+1, pos>>8);
   outb(CRTPORT, 15);
   outb(CRTPORT+1, pos);
-  crt[pos] = ' ' | 0x0700;
+  if (c == BACKSPACE)
+    crt[pos] = ' ' | 0x0700;
 }
 
 void
@@ -168,11 +189,16 @@ consputc(int c)
     for(;;)
       ;
   }
-
-  if(c == BACKSPACE){
-    uartputc('\b'); uartputc(' '); uartputc('\b');
-  } else
-    uartputc(c);
+  switch(c){
+    case BACKSPACE:
+      uartputc('\b'); uartputc(' '); uartputc('\b');
+      break;
+    case LEFT_ARROW:
+      uartputc('\b');
+      break;
+    default:
+      uartputc(c);
+  }
   cgaputc(c);
 }
 
@@ -198,16 +224,26 @@ consoleintr(int (*getc)(void))
       doprocdump = 1;   // procdump() locks cons.lock indirectly; invoke later
       break;
     case C('U'):  // Kill line.
-      while(input.e != input.w &&
+      while(input.e != input.r &&
             input.buf[(input.e-1) % INPUT_BUF] != '\n'){
         input.e--;
+        //input.w--;
         consputc(BACKSPACE);
       }
       break;
     case C('H'): case '\x7f':  // Backspace
-      if(input.e != input.w){
+      if(input.e != input.r){
         input.e--;
         consputc(BACKSPACE);
+      }
+      break;
+    case LEFT_ARROW:
+      if (input.e == input.r)
+        break;
+      else {
+        input.e--;
+        // consputx gets a left-arrow, and just move the blinker left
+        consputc(c);
       }
       break;
     default:
@@ -294,4 +330,3 @@ consoleinit(void)
   picenable(IRQ_KBD);
   ioapicenable(IRQ_KBD, 0);
 }
-
