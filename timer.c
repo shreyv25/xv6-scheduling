@@ -1,6 +1,6 @@
 // Intel 8253/8254/82C54 Programmable Interval Timer (PIT).
 // Only used on uniprocessors;
-// SMP machines use the local APIC timer.
+// SMP machines use the local APIC timer. Gilad test
 
 #include "types.h"
 #include "defs.h"
