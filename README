@@ -8,6 +8,8 @@ List of additions:
 1. Caret navigation in the terminal: you can move the caret left\right with the respective arrows.
 2. Command history of the last 16 commands: you can scroll through them with the up\down arrows.
 
+Copyright 2016 Asaf Chelouche, Gilad Herzfeld
+
 ----------------------------------------------------------------------------------
 
 xv6 is a re-implementation of Dennis Ritchie's and Ken Thompson's Unix
