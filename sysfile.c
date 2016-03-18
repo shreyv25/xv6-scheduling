@@ -440,3 +440,57 @@ sys_pipe(void)
   fd[1] = fd1;
   return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+  this is the actual function being called from syscall.c
+*/
+int
+sys_history(void)
+{
+  return 0;
+}
+
+
+
+#define INPUT_BUF 128                                                                                                           //MOVE this to .h or definitions!!
+/*
+  this struct will hold the history buffer array                                                                             GILAD FRI
+*/
+struct {
+  char buf[INPUT_BUF];//holds the actual command string
+  uint i;  //the last command of the history
+  uint j; //number of history commands in mem
+} history_buffer_array;
+//history_buffer_array.i=0;
+//history_buffer_array.j=0;
+
+
+
+/*
+  this method writes the an history comment
+*/
+int
+history(char * buffer, int historyId)
+{
+
+  return 0;
+}
+
+/*
+  this method copies the param buffer to the daved history
+*/
+int
+saveCommandInHistory(){
+  return 1;
+}
