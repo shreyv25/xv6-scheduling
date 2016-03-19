@@ -100,7 +100,7 @@ extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_history(void);
 
-static int (*syscalls[])(void) = {
+static int (*syscalls[])(void) = {                                                  /*whats the [] for?*/
 [SYS_fork]    sys_fork,
 [SYS_exit]    sys_exit,
 [SYS_wait]    sys_wait,
@@ -125,6 +125,13 @@ static int (*syscalls[])(void) = {
 [SYS_history]   sys_history,
 };
 
+
+/*
+  this method is called from rap after th trapframe was saved on user's stack and/
+  is calling for the spesific system called asked
+
+  returns to trap
+*/
 void
 syscall(void)
 {

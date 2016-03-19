@@ -13,6 +13,7 @@
 #include "fs.h"
 #include "file.h"
 #include "fcntl.h"
+#include "console.h"
 
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
@@ -451,46 +452,66 @@ sys_pipe(void)
 
 
 
-
+#define MAX_HISTORY 16
 /*
   this is the actual function being called from syscall.c
+  @returns - 0 if suceeded, 1 if no history in the historyId given, 2 if illgal history id
 */
 int
 sys_history(void)
-{
-  return 0;
+{  
+  char * buffer;
+  int historyId; 
+  int * length                                                                                       //TODO GILAD somehow get this from the syscall
+  if (historyId < 0 || historyId >15)
+    return 2; //illgal id
+  if !(historyId < history_buffer_array.numOfCommmandsInMem)
+    return 1; //no history in the given ID
+  else
+     history(buffer, historyId, length);
+   return 0; //success
 }
 
 
 
-#define INPUT_BUF 128                                                                                                           //MOVE this to .h or definitions!!
+
 /*
-  this struct will hold the history buffer array                                                                             GILAD FRI
+  this struct will hold the history buffer array                                                                            
 */
 struct {
-  char buf[INPUT_BUF];//holds the actual command string
-  uint i;  //the last command of the history
-  uint j; //number of history commands in mem
+  char bufferArr[MAX_HISTORY][INPUT_BUF]; //holds the actual command strings -
+  uint lengthsArr[MAX_HISTORY]; // this will hold the length of each command string
+  uint lastCommandIndex;  //the last command of the history
+  uint numOfCommmandsInMem; //number of history commands in mem
 } history_buffer_array;
-//history_buffer_array.i=0;
-//history_buffer_array.j=0;
+//=0;
+//history_buffer_array.numOfCommmandsInMem=0;                                                                                   //TODO GILAD find where to set these!
 
 
 
 /*
-  this method writes the an history comment
+  this method writes the requested command in the buffer (and its length)
 */
-int
-history(char * buffer, int historyId)
+void
+history(char * buffer, int historyId, int *length)
 {
-
-  return 0;
+  int indexInArray= (lastCommandIndex+historyId)%MAX_MEMORY_COMMAND_IN_HISTORY;
+   memmove(buffer, history_buffer_array.bufferArr[indexInArray], history_buffer_array.lengthsArr[indexInArray]);  
+   *length = history_buffer_array.lengthsArr[indexInArray];
 }
 
+
 /*
-  this method copies the param buffer to the daved history
+  this method copies the param buffer to the saved history 
+  @param length - length of command to be saved                                                                                 //GILAD QUES who should call this??
 */
-int
-saveCommandInHistory(){
-  return 1;
+void
+saveCommandInHistory(char * bufferToSave, int length){
+  if (history_buffer_array.numOfCommmandsInMem < MAX_HISTORY)
+    history_buffer_array.numOfCommmandsInMem++; //when we get to MAX_HISTORY commands in memory we keep on inserting to the array in a circular mution
+
+  history_buffer_array.lastCommandIndex = (history_buffer_array.lastCommandIndex == 0) ? MAX_HISTORY-1 : history_buffer_array.lastCommandIndex--;// does minus 1 % 16
+  memmove(history_buffer_array.bufferArr[buffer_array.lastCommandIndex], bufferToSave, length);
+  history_buffer_array.lengthsArr[buffer_array.lastCommandIndex] = length;
+
 }

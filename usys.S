@@ -1,6 +1,8 @@
 #include "syscall.h"
 #include "traps.h"
 
+#these are the basic calls for system functions - moving the "System call number" into eax and doing interupt
+
 #define SYSCALL(name) \
   .globl name; \
   name: \
@@ -29,4 +31,4 @@ SYSCALL(getpid)
 SYSCALL(sbrk)
 SYSCALL(sleep)
 SYSCALL(uptime)
-SYSCALL(history)																					#GILAD FRI
+SYSCALL(history)																					#I think I should add more parameters to this call #GILAD FRI
