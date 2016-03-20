@@ -49,9 +49,30 @@ struct backcmd {
   struct cmd *cmd;
 };
 
+
+                                                       
+
+
 int fork1(void);  // Fork but panics on failure.
 void panic(char*);
 struct cmd *parsecmd(char*);
+
+ char cmdFromHistory[INPUT_BUF];//this is the buffer that will get the current history command from history
+
+/*
+  this the function the calls to the different history indexes
+*/
+void history1() {
+  int i;
+  for (i = 0; i < MAX_HISTORY; i++) {
+    if (history(cmdFromHistory, MAX_HISTORY-i-1) == 0) { //this is the sys call
+      if (i < 10)
+        printf(1, " %d: %s\n", i, cmdFromHistory);                                                                //TODO GILAD fix numbers
+      else
+        printf(1, "%d: %s\n", i, cmdFromHistory);
+    }  
+  }
+}
 
 // Execute cmd.  Never returns.
 void
@@ -165,14 +186,19 @@ main(void)
         printf(2, "cannot cd %s\n", buf+3);
       continue;
     }
-    if(fork1() == 0)
+    if(buf[0] == 'h' && buf[1] == 'i' && buf[2] == 's' && buf[3] == 't'
+        && buf[4] == 'o' && buf[5] == 'r' && buf[6] == 'y') {
+      history1();
+      continue;
+    }
+  if(fork1() == 0)
       runcmd(parsecmd(buf));
     wait();
   }
   exit();
 }
 
-void
+void  
 panic(char *s)
 {
   printf(2, "%s\n", s);

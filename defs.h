@@ -9,6 +9,9 @@ struct spinlock;
 struct stat;
 struct superblock;
 
+#define INPUT_BUF 128
+#define MAX_HISTORY 16
+
 // bio.c
 void            binit(void);
 struct buf*     bread(uint, uint);
@@ -20,6 +23,8 @@ void            consoleinit(void);
 void            cprintf(char*, ...);
 void            consoleintr(int(*)(void));
 void            panic(char*) __attribute__((noreturn));
+
+int history(char *, int );
 
 // exec.c
 int             exec(char*, char**);
