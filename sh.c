@@ -63,13 +63,14 @@ struct cmd *parsecmd(char*);
   this the function the calls to the different history indexes
 */
 void history1() {
-  int i;
+  int i, count = 0;
   for (i = 0; i < MAX_HISTORY; i++) {
     if (history(cmdFromHistory, MAX_HISTORY-i-1) == 0) { //this is the sys call
-      if (i < 10)
-        printf(1, " %d: %s\n", i, cmdFromHistory);                                                                //TODO GILAD fix numbers
+      count++;
+      if (count < 10)
+        printf(1, " %d: %s\n", count, cmdFromHistory);                                                                
       else
-        printf(1, "%d: %s\n", i, cmdFromHistory);
+        printf(1, "%d: %s\n", count, cmdFromHistory);
     }  
   }
 }
