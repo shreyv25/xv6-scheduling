@@ -159,10 +159,6 @@ cgaputc(int c)
     case LEFT_ARROW:
       if(pos > 0) --pos;
       break;
-   /* case RIGHT_ARROW:                                  //GILAD maybe use something like this to move right... could couse problems with uart
-      pos++;
-      crt[pos] = (crt[pos]&0xff) | 0x0700;  // black on white
-      break;*/
     default:
       crt[pos++] = (c&0xff) | 0x0700;  // black on white
   }
@@ -371,10 +367,6 @@ consoleintr(int (*getc)(void))
         //ASAF need to fix cruzer control when more the 12 are entered
         //ASAF needs to make sure enter is enterd when getting to 128 chars in a command...
 
-         /* if (input.e < input.rightmost) {                            //GILAD maybe just use somthing like this and make sure consputc will handle RIGHT_ARROW
-            input.e++;
-            consputc(c);   // consputx gets a right-arrow, and just move the blinker right
-          }*/
         break;
 
 
@@ -418,7 +410,7 @@ consoleintr(int (*getc)(void))
 
 
       case '\n':
-      case '\r':                                                    //GILAD QUES whats "/r"
+      case '\r':                                                    
           input.e = input.rightmost;
       default:
         if(c != 0 && input.e-input.r < INPUT_BUF){
@@ -432,13 +424,13 @@ consoleintr(int (*getc)(void))
           }
           else {
             input.buf[input.e++ % INPUT_BUF] = c;
-            input.rightmost = input.e - input.rightmost == 1 ? input.e : input.rightmost;                         //GILAD QUES whats this??
+            input.rightmost = input.e - input.rightmost == 1 ? input.e : input.rightmost;                       
             consputc(c);
           }
           if(c == '\n' || c == C('D') || input.e == input.r+INPUT_BUF){
             saveCommandInHistory();
             input.w = input.e;
-            wakeup(&input.r);                                                                             //GILAD QUES why waking up on address???
+            wakeup(&input.r);                                                                       
           }
         }
         break;
