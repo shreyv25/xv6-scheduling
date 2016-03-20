@@ -294,7 +294,6 @@ void
 consoleintr(int (*getc)(void))
 {
   int c, doprocdump = 0;
-  uint i, n;
   uint tempIndex;
   acquire(&cons.lock);
 
@@ -352,16 +351,12 @@ consoleintr(int (*getc)(void))
         }
         break;
       case RIGHT_ARROW: //a bit long way to move the blinker right (moving n-times right and)
-       if (input.e < input.rightmost) {
-          n = input.rightmost - input.e;
-          for (i = 0; i < n; i++) {
-            consputc(input.buf[input.e + i % INPUT_BUF]);
-          }
-          for (i = 0; i < n - 1; i++) {
-            consputc(LEFT_ARROW);
-          }
+        if (input.e < input.rightmost) {
+          consputc(input.buf[input.e]);
           input.e++;
-          consputc(input.e == input.rightmost ? ' ' : input.buf[input.e]);
+        }
+        else if (input.e == input.rightmost){
+          consputc(' ');
           consputc(LEFT_ARROW);
         }
         //ASAF need to fix cruzer control when more the 12 are entered
@@ -527,6 +522,20 @@ saveCommandInHistory(){
     historyBufferArray.bufferArr[historyBufferArray.lastCommandIndex][i] =  input.buf[(input.r+i)%INPUT_BUF];
   } 
 
+}
+
+/*
+  this is the function that gets called by the sys_history and writes the requested command history in the buffer
+*/
+int history(char *buffer, int historyId) {
+  if (historyId < 0 || historyId > MAX_HISTORY - 1)
+    return -2;
+  if (historyId >= historyBufferArray.numOfCommmandsInMem )
+    return -1;
+  memset(buffer, '\0', INPUT_BUF);
+  int tempIndex = (historyBufferArray.lastCommandIndex + historyId)%MAX_HISTORY;
+  memmove(buffer, historyBufferArray.bufferArr[tempIndex], historyBufferArray.lengthsArr[tempIndex]);
+  return 0;
 }
 
 

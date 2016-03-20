@@ -453,24 +453,7 @@ sys_pipe(void)
 
 
 
-/*
-  this is the actual function being called from syscall.c
-  @returns - 0 if suceeded, 1 if no history in the historyId given, 2 if illgal history id
-*/
-/*int
-sys_history(void)
-{  
-  char * buffer;
-  int historyId; 
-  int * length                                                                                       //TODO GILAD somehow get this from the syscall
-  if (historyId < 0 || historyId >15)
-    return 2; //illgal id
-  if !(historyId < history_buffer_array.numOfCommmandsInMem)
-    return 1; //no history in the given ID
-  else
-     history(buffer, historyId, length);
-   return 0; //success
-}*/
+
 
 
 

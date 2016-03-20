@@ -23,7 +23,7 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
-int history(char * buffer, int historyId, int *length);															//TODO GILAD
+int history(char * buffer, int historyId);															//TODO GILAD
 
 // ulib.c
 int stat(char*, struct stat*);

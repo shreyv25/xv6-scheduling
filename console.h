@@ -56,3 +56,8 @@ copyBufferToInputBuf(char * bufToSaveInInput, uint length);
 */
 void
 saveCommandInHistory();
+
+/*
+  this is the function that gets called by the sys_history and writes the requested command history in the buffer
+*/
+int history(char *buffer, int historyId);
