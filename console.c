@@ -19,6 +19,8 @@
 #define LEFT_ARROW 228
 #define RIGHT_ARROW 229
 
+#define MAX_HISTORY 16
+
 static void consputc(int);
 
 static int panicked = 0;
@@ -208,6 +210,12 @@ struct {
 
 char buf2[INPUT_BUF];  // temporary storage for input.buf in a certain context
 
+struct {
+  char entries[MAX_HISTORY][INPUT_BUF + 1];
+  uint population;
+  uint current;
+} records;
+
 #define C(x)  ((x)-'@')  // Control-x
 
 /*
@@ -266,7 +274,7 @@ void
 consoleintr(int (*getc)(void))
 {
   int c, doprocdump = 0;
-  uint i, n;
+  uint i, n, entriesize;
   acquire(&cons.lock);
   while((c = getc()) >= 0){
     switch(c){
@@ -277,7 +285,6 @@ consoleintr(int (*getc)(void))
       if (input.rightmost > input.e) { // caret isn't at the end of the line
         uint numtoshift = input.rightmost - input.e;
         uint placestoshift = input.e - input.w;
-        uint i;
         for (i = 0; i < placestoshift; i++) {
           consputc(LEFT_ARROW);
         }
@@ -322,16 +329,71 @@ consoleintr(int (*getc)(void))
       break;
     case RIGHT_ARROW:
       if (input.e < input.rightmost) {
-        n = input.rightmost - input.e;
-        for (i = 0; i < n; i++) {
-          consputc(input.buf[input.e + i % INPUT_BUF]);
+        consputc(input.buf[input.e]);
+        input.e++;
+      }
+      else if (input.e == input.rightmost){
+        consputc(' ');
+        consputc(LEFT_ARROW);
+      }
+      break;
+    case UP_ARROW:
+      if (records.current > 0) {
+        records.current--;
+        n = input.rightmost - input.w;  // current line on screen length
+        entriesize = records.entries[records.current][INPUT_BUF];
+        for (i = 0; i < input.e - input.w; i++) {
+          consputc(LEFT_ARROW); // move the caret to the beginning of the line
         }
-        for (i = 0; i < n - 1; i++) {
+        for (i = 0; i < entriesize; i++) {
+          input.buf[input.w + i % INPUT_BUF] = records.entries[records.current][i]; // repopulate the buffer
+        }
+        input.e = input.w + records.entries[records.current][INPUT_BUF]; // index INPUT_BUF is the length of the command
+        input.rightmost = input.e;
+        for (i = 0; i < entriesize; i++) {
+          consputc(input.buf[input.w + i % INPUT_BUF]); /// repaint the new command
+        }
+        n = records.entries[records.current][INPUT_BUF] - n;
+        for (i = 0; i < entriesize - n; i++) {
+          consputc(' '); // erase chars from the old command
+        }
+        for (i = 0; i < entriesize - n; i++) {
+          consputc(LEFT_ARROW); // move the caret back to the left
+        }
+      }
+      break;
+    case DOWN_ARROW:
+      if (records.current <= records.population - 1) {
+        records.current++;
+        n = input.rightmost - input.w;  // current line on screen length
+        entriesize = records.entries[records.current][INPUT_BUF];
+        for (i = 0; i < input.e - input.w; i++) {
+          consputc(LEFT_ARROW); // move the caret to the beginning of the line
+        }
+        for (i = 0; i < entriesize; i++) {
+          input.buf[input.w + i % INPUT_BUF] = records.entries[records.current][i]; // repopulate the buffer
+        }
+        input.e = input.w + records.entries[records.current][INPUT_BUF]; // index INPUT_BUF is the length of the command
+        input.rightmost = input.e;
+        for (i = 0; i < entriesize; i++) {
+          consputc(input.buf[input.w + i % INPUT_BUF]); /// repaint the new command
+        }
+        n = records.entries[records.current][INPUT_BUF] - n;
+        for (i = 0; i < entriesize - n; i++) {
+          consputc(' '); // erase chars from the old command
+        }
+        for (i = 0; i < entriesize - n; i++) {
+          consputc(LEFT_ARROW); // move the caret back to the left
+        }
+      }
+      else { // clear the line
+        n = input.rightmost - input.w;
+        for (i = 0; i < n; i++) {
+          consputc(' ');
+        }
+        for (i = 0; i < n; i++) {
           consputc(LEFT_ARROW);
         }
-        input.e++;
-        consputc(input.e == input.rightmost ? ' ' : input.buf[input.e]);
-        consputc(LEFT_ARROW);
       }
       break;
     case '\n':
@@ -353,7 +415,25 @@ consoleintr(int (*getc)(void))
           consputc(c);
         }
         if(c == '\n' || c == C('D') || input.e == input.r+INPUT_BUF){
-          input.w = input.e;
+          input.w = input.rightmost;
+          if (records.population < MAX_HISTORY) { // empty places in records.entries
+            n = input.rightmost - input.r;
+            n = input.buf[input.rightmost - 1] == '\n' ? n - 1 : n;
+            records.current = records.population;
+            memmove(records.entries[records.current], input.buf + input.r, n);
+            records.entries[records.current][INPUT_BUF] = n;
+            records.population++;
+            records.current++;
+          }
+          else { // shift all entries one index down to make room for a new one
+            memmove(records.entries[0], records.entries[1], (MAX_HISTORY - 1) * (INPUT_BUF + 1));
+            records.current--;
+            n = input.rightmost - input.r;
+            n = input.buf[input.rightmost - 1] == '\n' ? n - 1 : n;
+            memmove(records.entries[MAX_HISTORY - 1], input.buf + input.r, n);
+            records.entries[MAX_HISTORY - 1][INPUT_BUF] = n;
+            records.current = records.population;
+          }
           wakeup(&input.r);
         }
       }
@@ -364,6 +444,16 @@ consoleintr(int (*getc)(void))
   if(doprocdump) {
     procdump();  // now call procdump() wo. cons.lock held
   }
+}
+
+int history(char *buffer, int historyId) {
+  if (historyId < 0 || historyId > MAX_HISTORY - 1)
+    return -2;
+  if (historyId >= records.current)
+    return -1;
+  memset(buffer, '\0', INPUT_BUF);
+  memmove(buffer, records.entries[historyId], records.entries[historyId][INPUT_BUF]);
+  return 0;
 }
 
 int
