@@ -452,12 +452,12 @@ sys_pipe(void)
 
 
 
-#define MAX_HISTORY 16
+
 /*
   this is the actual function being called from syscall.c
   @returns - 0 if suceeded, 1 if no history in the historyId given, 2 if illgal history id
 */
-int
+/*int
 sys_history(void)
 {  
   char * buffer;
@@ -470,48 +470,8 @@ sys_history(void)
   else
      history(buffer, historyId, length);
    return 0; //success
-}
+}*/
 
 
 
 
-/*
-  this struct will hold the history buffer array                                                                            
-*/
-struct {
-  char bufferArr[MAX_HISTORY][INPUT_BUF]; //holds the actual command strings -
-  uint lengthsArr[MAX_HISTORY]; // this will hold the length of each command string
-  uint lastCommandIndex;  //the last command of the history
-  uint numOfCommmandsInMem; //number of history commands in mem
-} history_buffer_array;
-//=0;
-//history_buffer_array.numOfCommmandsInMem=0;                                                                                   //TODO GILAD find where to set these!
-
-
-
-/*
-  this method writes the requested command in the buffer (and its length)
-*/
-void
-history(char * buffer, int historyId, int *length)
-{
-  int indexInArray= (lastCommandIndex+historyId)%MAX_MEMORY_COMMAND_IN_HISTORY;
-   memmove(buffer, history_buffer_array.bufferArr[indexInArray], history_buffer_array.lengthsArr[indexInArray]);  
-   *length = history_buffer_array.lengthsArr[indexInArray];
-}
-
-
-/*
-  this method copies the param buffer to the saved history 
-  @param length - length of command to be saved                                                                                 //GILAD QUES who should call this??
-*/
-void
-saveCommandInHistory(char * bufferToSave, int length){
-  if (history_buffer_array.numOfCommmandsInMem < MAX_HISTORY)
-    history_buffer_array.numOfCommmandsInMem++; //when we get to MAX_HISTORY commands in memory we keep on inserting to the array in a circular mution
-
-  history_buffer_array.lastCommandIndex = (history_buffer_array.lastCommandIndex == 0) ? MAX_HISTORY-1 : history_buffer_array.lastCommandIndex--;// does minus 1 % 16
-  memmove(history_buffer_array.bufferArr[buffer_array.lastCommandIndex], bufferToSave, length);
-  history_buffer_array.lengthsArr[buffer_array.lastCommandIndex] = length;
-
-}

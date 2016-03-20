@@ -222,6 +222,20 @@ struct {
 
 char charsToBeMoved[INPUT_BUF];  // temporary storage for input.buf in a certain context
 
+/*
+  this struct will hold the history buffer array                                                                            
+*/
+struct {
+  char bufferArr[MAX_HISTORY][INPUT_BUF]; //holds the actual command strings -
+  uint lengthsArr[MAX_HISTORY]; // this will hold the length of each command string
+  uint lastCommandIndex;  //the index of the last command entered to history
+  int numOfCommmandsInMem; //number of history commands in mem
+  int currentHistory;//this will hold the current history view (the oldest will be MAX_HISTORY-1) 
+} historyBufferArray;
+
+char oldBuf[INPUT_BUF];// this will hold the details of the command that was written before accessing the history
+uint lengthOfOldBuf;
+
 #define C(x)  ((x)-'@')  // Control-x
 
 /*
@@ -285,6 +299,7 @@ consoleintr(int (*getc)(void))
 {
   int c, doprocdump = 0;
   uint i, n;
+  uint tempIndex;
   acquire(&cons.lock);
 
   while((c = getc()) >= 0){
@@ -363,59 +378,41 @@ consoleintr(int (*getc)(void))
         break;
 
 
-            case UP_ARROW:
-                //earase the current line on screen
-               // if (historyId == -1) copyCharsToBeMovedferToOldBuf
-               //earse current input.buf                                                                                              //DELETE
-                //history(current_history_viewed.buf, ++historyId);   call this only if c<15
-               // copy current_history_viewed.buf  to screen using "void copy_buffer_to_screen"
-              // copy  current_history_viewed.buf to input.buf (doing extrawork when going through history)
-             if (current_history_viewed.historyId<15){
-                earaseCurrentLineOnScreen();
-                if (current_history_viewed.historyId == -1)
-                    copyCharsToBeMovedfToOldBuf();
-                earaseContentOnInput_buf();
-                current_history_viewed.historyId++;
+      case UP_ARROW:
+       if (historyBufferArray.currentHistory < historyBufferArray.numOfCommmandsInMem-1 ){ // current history means the oldest possible will be MAX_HISTORY-1
+          earaseCurrentLineOnScreen();
+          if (historyBufferArray.currentHistory == -1)
+              copyCharsToBeMovedToOldBuf();
+          earaseContentOnInputBuf();
+          historyBufferArray.currentHistory++;
 
-                history(current_history_viewed.buf, current_history_viewed, &current_history_viewed.length);                                                  //GILAD QUES how to make this syscall?!?!
-
-                copyBufferToScreen(current_history_viewed.buf, current_history_viewed.oldBuf.length);
-                copyBufferToInputBuf(current_history_viewed.buf, current_history_viewed.oldBuf.length);
-              }
-           
-
-        
+          tempIndex = (historyBufferArray.lastCommandIndex + historyBufferArray.currentHistory) %MAX_HISTORY;
+          copyBufferToScreen(historyBufferArray.bufferArr[ tempIndex]  , historyBufferArray.lengthsArr[tempIndex]);
+          copyBufferToInputBuf(historyBufferArray.bufferArr[ tempIndex]  , historyBufferArray.lengthsArr[tempIndex]);
+        }
         break;
 
-            case DOWN_ARROW:
-                //earase the current line on screen
-               //earse current input.buf                                                                                              //GILAD
-               // if (historyId == 0) {copyOldBufToInputBuf ; historyId-- ; copyOldBufToScreen}  very similar t the next two lines
-                    //{ copy current_history_viewed.buf  to screen using "void copy_buffer_to_screen"
-                      // copy  current_history_viewed.buf to input.buf (doing extrawork when going through history)  }   
+      case DOWN_ARROW: 
+        switch(historyBufferArray.currentHistory){
+          case -1:
+            //does nothing
+            break;
+          case 0: //get string from old buf
+            earaseCurrentLineOnScreen();
+            copyBufferToInputBuf(oldBuf, lengthOfOldBuf);
+            copyBufferToScreen(oldBuf, lengthOfOldBuf);
+            historyBufferArray.currentHistory--;                                              
+            break;
 
-              switch(current_history_viewed.historyId){
-                case -1:
-                  //does nothing
-                  break;
-                case 0: //get string from old buf
-                  earaseCurrentLineOnScreen();
-                  copyBufferToInputBuf(current_history_viewed.oldBuf, current_history_viewed.oldBuf.lengthOld);
-                  copyBufferToScreen(current_history_viewed.oldBuf, current_history_viewed.oldBuf.lengthOld);
-                  current_history_viewed.historyId--;                                                
-                  break;
+          default:
+            earaseCurrentLineOnScreen();
+            historyBufferArray.currentHistory--;  
 
-                default:
-                  earaseCurrentLineOnScreen();
-                  current_history_viewed.historyId--; 
-
-                  history(current_history_viewed.buf, current_history_viewed.historyId, &current_history_viewed.length);                                                  //GILAD QUES how to make this syscall?!?!
-
-                  copyBufferToInputBuf(current_history_viewed.buf current_history_viewed.oldBuf.length);
-                  copyBufferToScreen(current_history_viewed.buf, current_history_viewed.oldBuf.length);
-                  break;
-              }
-        
+            tempIndex = (historyBufferArray.lastCommandIndex + historyBufferArray.currentHistory)%MAX_HISTORY;
+            copyBufferToScreen(historyBufferArray.bufferArr[ tempIndex]  , historyBufferArray.lengthsArr[tempIndex]);
+            copyBufferToInputBuf(historyBufferArray.bufferArr[ tempIndex]  , historyBufferArray.lengthsArr[tempIndex]);
+            break;
+        }
         break;
 
 
@@ -439,6 +436,7 @@ consoleintr(int (*getc)(void))
             consputc(c);
           }
           if(c == '\n' || c == C('D') || input.e == input.r+INPUT_BUF){
+            saveCommandInHistory();
             input.w = input.e;
             wakeup(&input.r);                                                                             //GILAD QUES why waking up on address???
           }
@@ -452,20 +450,40 @@ consoleintr(int (*getc)(void))
   }
 }
 
+
+
 /*
   this method eareases the current line from screen
 */
 void
 earaseCurrentLineOnScreen(void){
-                                                                                                              //TODO
+    uint numToEarase = input.rightmost - input.r;
+    uint i;
+    for (i = 0; i < numToEarase; i++) {
+      consputc(BACKSPACE);
+    }                                                                                                       
 }
 
 /*
-  this method copies the chars currently on display (and on Input.buf) to current_history_viewed.oldBuf and save its length on current_history_viewed.lengthOld
+  this method copies the chars currently on display (and on Input.buf) to oldBuf and save its length on current_history_viewed.lengthOld
 */
 void
-copyCharsToBeMovedfToOldBuf(void){
-                                                                                                             //TODO
+copyCharsToBeMovedToOldBuf(void){
+    lengthOfOldBuf = input.rightmost - input.r;
+    uint i;
+    for (i = 0; i < lengthOfOldBuf; i++) {
+        oldBuf[i] = input.buf[(input.r+i)%INPUT_BUF];
+    }
+                                                                                                      
+}
+
+/*
+  this method earase all the content of the current command on the inputbuf
+*/
+void
+earaseContentOnInputBuf(){
+  input.rightmost = input.r;
+  input.e = input.r;
 }
 
 /*
@@ -473,59 +491,88 @@ copyCharsToBeMovedfToOldBuf(void){
 */
 void
 copyBufferToScreen(char * bufToPrintOnScreen, uint length){
-                                                                                                             //TODO
+  uint i;
+  for (i = 0; i < length; i++) {
+    consputc(bufToPrintOnScreen[i]);
+  }                                                                                                        
 }
 
 /*
   this method will copy the given buf to Input.buf
   will set the input.e and input.rightmost
+  assumes input.r=input.w=input.rightmost=input.e                                                                   
 */
 void
 copyBufferToInputBuf(char * bufToSaveInInput, uint length){
-                                                                                                             //TODO
+  uint i;
+  for (i = 0; i < length; i++) {
+    input.buf[(input.r+i)%INPUT_BUF] = bufToSaveInInput[i];
+  } 
+  input.e = input.r+length;
+  input.rightmost = input.e;                                                                                                         
 }
+ 
 
-
-
-/*
-  this struct will hold the history buffer array                                                                            
-*/
-struct {
-  char bufferArr[MAX_HISTORY][INPUT_BUF]; //holds the actual command strings -
-  uint lengthsArr[MAX_HISTORY]; // this will hold the length of each command string
-  uint lastCommandIndex;  //the last command of the history
-  uint numOfCommmandsInMem; //number of history commands in mem
-} history_buffer_array;
 
 
 
 
 /*
-  this method writes the requested command in the buffer (and its length)
+  this method copies the current command in the input.buf to the saved history 
+  @param length - length of command to be saved                                                                                 
 */
 void
-history(char * buffer, int historyId, int *length)
-{
-  int indexInArray= (lastCommandIndex+historyId)%MAX_MEMORY_COMMAND_IN_HISTORY;
-   memmove(buffer, history_buffer_array.bufferArr[indexInArray], history_buffer_array.lengthsArr[indexInArray]);  
-   *length = history_buffer_array.lengthsArr[indexInArray];
-}
+saveCommandInHistory(){
+  historyBufferArray.currentHistory= -1;//reseting the users history current viewed
+  if (historyBufferArray.numOfCommmandsInMem < MAX_HISTORY)
+    historyBufferArray.numOfCommmandsInMem++; //when we get to MAX_HISTORY commands in memory we keep on inserting to the array in a circular mution
 
-
-/*
-  this method copies the param buffer to the saved history 
-  @param length - length of command to be saved                                                                                 //GILAD QUES who should call this??
-*/
-void
-saveCommandInHistory(char * bufferToSave, int length){
-  if (history_buffer_array.numOfCommmandsInMem < MAX_HISTORY)
-    history_buffer_array.numOfCommmandsInMem++; //when we get to MAX_HISTORY commands in memory we keep on inserting to the array in a circular mution
-
-  history_buffer_array.lastCommandIndex = (history_buffer_array.lastCommandIndex == 0) ? MAX_HISTORY-1 : history_buffer_array.lastCommandIndex--;// does minus 1 % 16
-  memmove(history_buffer_array.bufferArr[buffer_array.lastCommandIndex], bufferToSave, length);
-  history_buffer_array.lengthsArr[buffer_array.lastCommandIndex] = length;
+  uint l = input.rightmost-input.r -1;
+  historyBufferArray.lastCommandIndex = (historyBufferArray.lastCommandIndex - 1)%MAX_HISTORY;
+  historyBufferArray.lengthsArr[historyBufferArray.lastCommandIndex] = l;
+  uint i;
+  for (i = 0; i < l; i++) { //do not want to save in memory the last char '/n'
+    historyBufferArray.bufferArr[historyBufferArray.lastCommandIndex][i] =  input.buf[(input.r+i)%INPUT_BUF];
+  } 
 
 }
+
+
+
+
+
+
+                                                          //DELETE???
+                                                          /*
+                                                            this method writes the requested command in the buffer (and its length)
+                                                          */
+                                                     /*     void
+                                                          history(char * buffer, int historyId, int *length)
+                                                          {
+                                                            int indexInArray= (lastCommandIndex+historyId)%MAX_MEMORY_COMMAND_IN_HISTORY;
+                                                             memmove(buffer, historyBufferArray.bufferArr[indexInArray], historyBufferArray.lengthsArr[indexInArray]);  
+                                                             *length = historyBufferArray.lengthsArr[indexInArray];
+                                                          }
+                                                    */
+
+                                                          /*
+                                                            this struct will hold the current history command view.                                                                                   GILAD
+                                                          */
+                                                     /*     struct {
+                                                            char buf[INPUT_BUF];//holds the actual command string brought from kernel history
+                                                            int historyId;  //if historyId==-1, not in use, if historyId==X (0<=X<=15) - buf holds the string of the X's history command  
+                                                                                                    //can make hold perviuos "un-entered" command when -1"
+                                                            uint lengthHistory; //maybe not needed
+                                                            char oldBuf[INPUT_BUF];// holds the command that began to be entered
+                                                            uint lengthOld; 
+                                                          } current_history_viewed;
+                                                      */
+
+                                                          //current_history_viewed.historyId = -1; 
+                                                          //was moved to consoleinit  
+
+
+
 
 
 
@@ -597,36 +644,10 @@ consoleinit(void)
   ioapicenable(IRQ_KBD, 0);
 
  
-    history_buffer_array.numOfCommmandsInMem=0;
-    history_buffer_array.lastCommandIndex=0;
+    historyBufferArray.numOfCommmandsInMem=0;
+    historyBufferArray.lastCommandIndex=0;
 
 }
 
 
 
-/*
-current_history_viewed.historyId = -1; //at the beginning no history was asked    GILAD
-
-
-
-
-/
-  this struct will hold the current history command view.                                                                                   GILAD
-/
-struct {
-  char buf[INPUT_BUF];//holds the actual command string brought from kernel history
-  int historyId;  /if historyId==-1, not in use, if historyId==X (0<=X<=15) - buf holds the string of the X's history command  /
-                                          can make hold perviuos "un-entered" command when -1"/
-  uint lengthHistory; //maybe not needed
-  char oldBuf[INPUT_BUF];// holds the command that began to be entered
-  uint lengthOld; 
-} current_history_viewed;
-//current_history_viewed.historyId = -1; //was moved to consoleinit  
-
-
-
-
-
-
-
-*/
