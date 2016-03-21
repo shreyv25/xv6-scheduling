@@ -231,6 +231,8 @@ struct {
 char oldBuf[INPUT_BUF];// this will hold the details of the command that was written before accessing the history
 uint lengthOfOldBuf;
 
+char buf2[INPUT_BUF];
+
 #define C(x)  ((x)-'@')  // Control-x
 
 /*
@@ -308,7 +310,13 @@ consoleintr(int (*getc)(void))
           for (i = 0; i < placestoshift; i++) {
             consputc(LEFT_ARROW);
           }
-          memmove(input.buf + (input.w % INPUT_BUF), input.buf + ((input.w + placestoshift) % INPUT_BUF), numtoshift); //copying the remaining chars to the beginning
+          memset(buf2, '\0', INPUT_BUF);
+          for (i = 0; i < numtoshift; i++) {
+            buf2[i] = input.buf[(input.w + i + placestoshift) % INPUT_BUF];
+          }
+          for (i = 0; i < numtoshift; i++) {
+            input.buf[(input.w + i) % INPUT_BUF] = buf2[i];
+          }
           input.e -= placestoshift;
           input.rightmost -= placestoshift;
           for (i = 0; i < numtoshift; i++) { // repaint the chars
@@ -349,7 +357,7 @@ consoleintr(int (*getc)(void))
         break;
       case RIGHT_ARROW:
         if (input.e < input.rightmost) {
-          consputc(input.buf[input.e]);
+          consputc(input.buf[input.e % INPUT_BUF]);
           input.e++;
         }
         else if (input.e == input.rightmost){
