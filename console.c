@@ -191,11 +191,9 @@ consputc(int c)
     for(;;)
       ;
   }
-
   switch (c) {
     case BACKSPACE:
       // uartputc prints to Linux's terminal
-
       uartputc('\b'); uartputc(' '); uartputc('\b');  // uart is writing to the linux shell
       break;
     case LEFT_ARROW:
@@ -214,21 +212,20 @@ struct {
   uint r;  // Read index, exec will start reading the command from here
   uint w;  // Write index, exec will finish reading the command here
   uint e;  // Edit index, current caret position
-
   uint rightmost; // the first empty char in the line
 } input;
 
 char charsToBeMoved[INPUT_BUF];  // temporary storage for input.buf in a certain context
 
 /*
-  this struct will hold the history buffer array                                                                            
+  this struct will hold the history buffer array
 */
 struct {
   char bufferArr[MAX_HISTORY][INPUT_BUF]; //holds the actual command strings -
   uint lengthsArr[MAX_HISTORY]; // this will hold the length of each command string
   uint lastCommandIndex;  //the index of the last command entered to history
   int numOfCommmandsInMem; //number of history commands in mem
-  int currentHistory;//this will hold the current history view (the oldest will be MAX_HISTORY-1) 
+  int currentHistory;//this will hold the current history view (the oldest will be MAX_HISTORY-1)
 } historyBufferArray;
 
 char oldBuf[INPUT_BUF];// this will hold the details of the command that was written before accessing the history
@@ -241,10 +238,10 @@ Copy input.buf to a safe location. Used only when punching in new keys and the
 caret isn't at the end of the line.
 */
 void copyCharsToBeMoved() {
-  uint n = input.rightmost - input.e;
+  uint n = input.rightmost - input.r;
   uint i;
   for (i = 0; i < n; i++)
-    charsToBeMoved[i] = input.buf[input.e + i % INPUT_BUF];
+    charsToBeMoved[i] = input.buf[(input.r + i) % INPUT_BUF];
 }
 
 /*
@@ -257,7 +254,7 @@ void shiftbufright() {
   for (i = 0; i < n; i++) {
 
     char c = charsToBeMoved[i];
-    input.buf[input.e + i % INPUT_BUF] = c;
+    input.buf[(input.e + i) % INPUT_BUF] = c;
     consputc(c);
   }
   // reset charsToBeMoved for future use
@@ -278,8 +275,8 @@ void shiftbufleft() {
   consputc(LEFT_ARROW);
   input.e--;
   for (i = 0; i < n; i++) {
-    char c = input.buf[input.e + i + 1 % INPUT_BUF];
-    input.buf[input.e + i % INPUT_BUF] = c;
+    char c = input.buf[(input.e + i + 1) % INPUT_BUF];
+    input.buf[(input.e + i) % INPUT_BUF] = c;
     consputc(c);
   }
   input.rightmost--;
@@ -288,8 +285,6 @@ void shiftbufleft() {
     consputc(LEFT_ARROW); // shift the caret back to the left
   }
 }
-
-
 
 /*
   this method begins the handeling of a console interupt
@@ -300,7 +295,6 @@ consoleintr(int (*getc)(void))
   int c, doprocdump = 0;
   uint tempIndex;
   acquire(&cons.lock);
-
   while((c = getc()) >= 0){
     switch(c){
       case C('P'):  // Process listing.
@@ -314,11 +308,11 @@ consoleintr(int (*getc)(void))
           for (i = 0; i < placestoshift; i++) {
             consputc(LEFT_ARROW);
           }
-          memmove(input.buf + input.w, input.buf + input.w + placestoshift, numtoshift); //copying the remaining chars to the beginning
+          memmove(input.buf + (input.w % INPUT_BUF), input.buf + ((input.w + placestoshift) % INPUT_BUF), numtoshift); //copying the remaining chars to the beginning
           input.e -= placestoshift;
           input.rightmost -= placestoshift;
           for (i = 0; i < numtoshift; i++) { // repaint the chars
-            consputc(input.buf[input.e + i % INPUT_BUF]);
+            consputc(input.buf[(input.e + i) % INPUT_BUF]);
           }
           for (i = 0; i < placestoshift; i++) { // erase the leftover chars
             consputc(' ');
@@ -329,7 +323,7 @@ consoleintr(int (*getc)(void))
         }
         else { // caret is at the end of the line -                                       ( deleting everything from both screen and inputbuf)
           while(input.e != input.w &&
-                input.buf[(input.e-1) % INPUT_BUF] != '\n'){
+                input.buf[(input.e - 1) % INPUT_BUF] != '\n'){
             input.e--;
             input.rightmost--;
             consputc(BACKSPACE);
@@ -346,15 +340,14 @@ consoleintr(int (*getc)(void))
           input.rightmost--;
           consputc(BACKSPACE);
         }
-
         break;
       case LEFT_ARROW:
         if (input.e != input.w) {
           input.e--;
-          consputc(c);   // consputx gets a left-arrow, and just move the blinker left
+          consputc(c);
         }
         break;
-      case RIGHT_ARROW: //a bit long way to move the blinker right (moving n-times right and)
+      case RIGHT_ARROW:
         if (input.e < input.rightmost) {
           consputc(input.buf[input.e]);
           input.e++;
@@ -363,12 +356,7 @@ consoleintr(int (*getc)(void))
           consputc(' ');
           consputc(LEFT_ARROW);
         }
-        //ASAF need to fix cruzer control when more the 12 are entered
-        //ASAF needs to make sure enter is enterd when getting to 128 chars in a command...
-
         break;
-
-
       case UP_ARROW:
        if (historyBufferArray.currentHistory < historyBufferArray.numOfCommmandsInMem-1 ){ // current history means the oldest possible will be MAX_HISTORY-1
           earaseCurrentLineOnScreen();
@@ -376,14 +364,12 @@ consoleintr(int (*getc)(void))
               copyCharsToBeMovedToOldBuf();
           earaseContentOnInputBuf();
           historyBufferArray.currentHistory++;
-
           tempIndex = (historyBufferArray.lastCommandIndex + historyBufferArray.currentHistory) %MAX_HISTORY;
           copyBufferToScreen(historyBufferArray.bufferArr[ tempIndex]  , historyBufferArray.lengthsArr[tempIndex]);
           copyBufferToInputBuf(historyBufferArray.bufferArr[ tempIndex]  , historyBufferArray.lengthsArr[tempIndex]);
         }
         break;
-
-      case DOWN_ARROW: 
+      case DOWN_ARROW:
         switch(historyBufferArray.currentHistory){
           case -1:
             //does nothing
@@ -392,24 +378,19 @@ consoleintr(int (*getc)(void))
             earaseCurrentLineOnScreen();
             copyBufferToInputBuf(oldBuf, lengthOfOldBuf);
             copyBufferToScreen(oldBuf, lengthOfOldBuf);
-            historyBufferArray.currentHistory--;                                              
+            historyBufferArray.currentHistory--;
             break;
-
           default:
             earaseCurrentLineOnScreen();
-            historyBufferArray.currentHistory--;  
-
+            historyBufferArray.currentHistory--;
             tempIndex = (historyBufferArray.lastCommandIndex + historyBufferArray.currentHistory)%MAX_HISTORY;
             copyBufferToScreen(historyBufferArray.bufferArr[ tempIndex]  , historyBufferArray.lengthsArr[tempIndex]);
             copyBufferToInputBuf(historyBufferArray.bufferArr[ tempIndex]  , historyBufferArray.lengthsArr[tempIndex]);
             break;
         }
         break;
-
-
-
       case '\n':
-      case '\r':                                                    
+      case '\r':
           input.e = input.rightmost;
       default:
         if(c != 0 && input.e-input.r < INPUT_BUF){
@@ -423,13 +404,13 @@ consoleintr(int (*getc)(void))
           }
           else {
             input.buf[input.e++ % INPUT_BUF] = c;
-            input.rightmost = input.e - input.rightmost == 1 ? input.e : input.rightmost;                       
+            input.rightmost = input.e - input.rightmost == 1 ? input.e : input.rightmost;
             consputc(c);
           }
-          if(c == '\n' || c == C('D') || input.e == input.r+INPUT_BUF){
+          if(c == '\n' || c == C('D') || input.rightmost == input.r + INPUT_BUF){
             saveCommandInHistory();
-            input.w = input.e;
-            wakeup(&input.r);                                                                       
+            input.w = input.rightmost;
+            wakeup(&input.r);
           }
         }
         break;
@@ -441,8 +422,6 @@ consoleintr(int (*getc)(void))
   }
 }
 
-
-
 /*
   this method eareases the current line from screen
 */
@@ -452,7 +431,7 @@ earaseCurrentLineOnScreen(void){
     uint i;
     for (i = 0; i < numToEarase; i++) {
       consputc(BACKSPACE);
-    }                                                                                                       
+    }
 }
 
 /*
@@ -465,7 +444,7 @@ copyCharsToBeMovedToOldBuf(void){
     for (i = 0; i < lengthOfOldBuf; i++) {
         oldBuf[i] = input.buf[(input.r+i)%INPUT_BUF];
     }
-                                                                                                      
+
 }
 
 /*
@@ -485,46 +464,40 @@ copyBufferToScreen(char * bufToPrintOnScreen, uint length){
   uint i;
   for (i = 0; i < length; i++) {
     consputc(bufToPrintOnScreen[i]);
-  }                                                                                                        
+  }
 }
 
 /*
   this method will copy the given buf to Input.buf
   will set the input.e and input.rightmost
-  assumes input.r=input.w=input.rightmost=input.e                                                                   
+  assumes input.r=input.w=input.rightmost=input.e
 */
 void
 copyBufferToInputBuf(char * bufToSaveInInput, uint length){
   uint i;
   for (i = 0; i < length; i++) {
     input.buf[(input.r+i)%INPUT_BUF] = bufToSaveInInput[i];
-  } 
+  }
   input.e = input.r+length;
-  input.rightmost = input.e;                                                                                                         
+  input.rightmost = input.e;
 }
- 
-
-
-
-
 
 /*
-  this method copies the current command in the input.buf to the saved history 
-  @param length - length of command to be saved                                                                                 
+  this method copies the current command in the input.buf to the saved history
+  @param length - length of command to be saved
 */
 void
 saveCommandInHistory(){
   historyBufferArray.currentHistory= -1;//reseting the users history current viewed
   if (historyBufferArray.numOfCommmandsInMem < MAX_HISTORY)
     historyBufferArray.numOfCommmandsInMem++; //when we get to MAX_HISTORY commands in memory we keep on inserting to the array in a circular mution
-
   uint l = input.rightmost-input.r -1;
   historyBufferArray.lastCommandIndex = (historyBufferArray.lastCommandIndex - 1)%MAX_HISTORY;
   historyBufferArray.lengthsArr[historyBufferArray.lastCommandIndex] = l;
   uint i;
   for (i = 0; i < l; i++) { //do not want to save in memory the last char '/n'
     historyBufferArray.bufferArr[historyBufferArray.lastCommandIndex][i] =  input.buf[(input.r+i)%INPUT_BUF];
-  } 
+  }
 
 }
 
@@ -537,7 +510,7 @@ int history(char *buffer, int historyId) {
   if (historyId >= historyBufferArray.numOfCommmandsInMem )
     return -1;
   memset(buffer, '\0', INPUT_BUF);
-  int tempIndex = (historyBufferArray.lastCommandIndex + historyId)%MAX_HISTORY;
+  int tempIndex = (historyBufferArray.lastCommandIndex + historyId) % MAX_HISTORY;
   memmove(buffer, historyBufferArray.bufferArr[tempIndex], historyBufferArray.lengthsArr[tempIndex]);
   return 0;
 }
@@ -607,11 +580,8 @@ consoleinit(void)
   picenable(IRQ_KBD);
   ioapicenable(IRQ_KBD, 0);
 
- 
+
     historyBufferArray.numOfCommmandsInMem=0;
     historyBufferArray.lastCommandIndex=0;
 
 }
-
-
-
