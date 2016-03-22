@@ -267,6 +267,7 @@ void
 scheduler(void)
 {
   struct proc *p;
+  //struct proc *minP = null;
 
   for(;;){
     // Enable interrupts on this processor.
@@ -274,6 +275,10 @@ scheduler(void)
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
+
+
+    // the differnt options for scheduling policies, chosen during compilation
+    #ifdef DEFAULT
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
@@ -291,6 +296,24 @@ scheduler(void)
       // It should have changed its p->state before coming back.
       proc = 0;
     }
+    #endif
+
+
+
+    /*# not working at the moment....
+    ifdef FCFS
+      for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+        if(p->state != RUNNABLE)
+          continue;
+      if (minP==null)
+        minP = p;
+      else
+        if(minp.ctime<p.ctime)
+          minp = p;
+
+      
+    #endif*/
+
     release(&ptable.lock);
 
   }
@@ -466,6 +489,9 @@ procdump(void)
   }
 }
 
+/*
+  ass1:task2 this method will run every clock tick and update the statistic fields for each proc
+*/
 void updatestatistics() {
   struct proc *p;
   acquire(&ptable.lock);

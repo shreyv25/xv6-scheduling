@@ -7,8 +7,7 @@
 #define BACKSPACE 0x100
 #define CRTPORT 0x3d4
 
-#define INPUT_BUF 128
-#define MAX_HISTORY 16
+
 
 #include "types.h"
 

@@ -103,8 +103,14 @@ int sys_history(void) {
   return history(buffer, historyId);
 }
 
+/*
+  this is the actual function being called from syscall.c
+  @returns - pidof the terminated child process ‐ if successful
+­             -1, upon failure
+*/
 int sys_wait2(void) {
   int res;
+  //GILAD QUES why arnt these pointers??
   int retime = 0;
   int rutime = 0;
   int stime = 0;

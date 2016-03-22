@@ -166,7 +166,19 @@ getcmd(char *buf, int nbuf)
 int
 main(void)
 {
-  static char buf[128];
+  // printing the scheduling policy chosen
+  #ifdef DEFAULT
+    printf(1, "DEFAULT ");
+  #endif
+
+ #ifdef FCFS
+    printf(1, "FCFS ");
+  #endif
+
+  printf(1, "scheduling policy chosen\n");
+
+
+  static char buf[INPUT_BUF];
   int fd;
   int retime, rutime, stime,pid;
   // Assumes three file descriptors open.

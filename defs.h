@@ -9,8 +9,7 @@ struct spinlock;
 struct stat;
 struct superblock;
 
-#define INPUT_BUF 128
-#define MAX_HISTORY 16
+
 
 // bio.c
 void            binit(void);
