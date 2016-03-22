@@ -61,7 +61,7 @@ sys_sleep(void)
 {
   int n;
   uint ticks0;
-  
+
   if(argint(0, &n) < 0)
     return -1;
   acquire(&tickslock);
@@ -83,7 +83,7 @@ int
 sys_uptime(void)
 {
   uint xticks;
-  
+
   acquire(&tickslock);
   xticks = ticks;
   release(&tickslock);
@@ -103,3 +103,17 @@ int sys_history(void) {
   return history(buffer, historyId);
 }
 
+int sys_wait2(void) {
+  int res;
+  int retime = 0;
+  int rutime = 0;
+  int stime = 0;
+  argint(0, &retime);
+  argint(1, &rutime);
+  argint(2, &stime);
+  res = sys_wait();
+  *(int*)retime = proc->retime;
+  *(int*)rutime = proc->rutime;
+  *(int*)stime = proc->stime;
+  return res;
+}

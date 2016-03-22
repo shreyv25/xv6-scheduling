@@ -23,8 +23,7 @@ void            consoleinit(void);
 void            cprintf(char*, ...);
 void            consoleintr(int(*)(void));
 void            panic(char*) __attribute__((noreturn));
-
-int history(char *, int );
+int             history(char *, int );
 
 // exec.c
 int             exec(char*, char**);
@@ -123,6 +122,7 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
+int             wait2(int*, int*, int*);
 
 // swtch.S
 void            swtch(struct context**, struct context*);
