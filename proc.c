@@ -88,6 +88,7 @@ userinit(void)
     panic("userinit: out of memory?");
   inituvm(p->pgdir, _binary_initcode_start, (int)_binary_initcode_size);
   p->sz = PGSIZE;
+  p->ctime = ticks;
   memset(p->tf, 0, sizeof(*p->tf));
   p->tf->cs = (SEG_UCODE << 3) | DPL_USER;
   p->tf->ds = (SEG_UDATA << 3) | DPL_USER;
@@ -149,7 +150,7 @@ fork(void)
 
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
-
+  np->ctime = ticks;  // set the new process's creation time
   for(i = 0; i < NOFILE; i++)
     if(proc->ofile[i])
       np->ofile[i] = filedup(proc->ofile[i]);
@@ -255,6 +256,14 @@ wait(void)
   }
 }
 
+int wait2(int *retime, int *rutime, int *stime) {
+  int res = wait();
+  *retime = proc->retime;
+  *rutime = proc->rutime;
+  *stime = proc->stime;
+  return res;
+}
+
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
@@ -311,7 +320,7 @@ scheduler(void)
         if(minp.ctime<p.ctime)
           minp = p;
 
-      
+
     #endif*/
 
     release(&ptable.lock);

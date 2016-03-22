@@ -26,6 +26,22 @@ sys_wait(void)
   return wait();
 }
 
+/*
+  this is the actual function being called from syscall.c
+  @returns - pidof the terminated child process ‐ if successful
+­             -1, upon failure
+*/
+int sys_wait2(void) {
+  int *retime, *rutime, *stime;
+  if (argptr(0, (void*)&retime, sizeof(retime)) < 0)
+    return -1;
+  if (argptr(1, (void*)&rutime, sizeof(retime)) < 0)
+    return -1;
+  if (argptr(2, (void*)&stime, sizeof(stime)) < 0)
+    return -1;
+  return wait2(retime, rutime, stime);
+}
+
 int
 sys_kill(void)
 {
@@ -101,25 +117,4 @@ int sys_history(void) {
   argptr(0, &buffer, 1);
   argint(1, &historyId);
   return history(buffer, historyId);
-}
-
-/*
-  this is the actual function being called from syscall.c
-  @returns - pidof the terminated child process ‐ if successful
-­             -1, upon failure
-*/
-int sys_wait2(void) {
-  int res;
-  //GILAD QUES why arnt these pointers??
-  int retime = 0;
-  int rutime = 0;
-  int stime = 0;
-  argint(0, &retime);
-  argint(1, &rutime);
-  argint(2, &stime);
-  res = sys_wait();
-  *(int*)retime = proc->retime;
-  *(int*)rutime = proc->rutime;
-  *(int*)stime = proc->stime;
-  return res;
 }
