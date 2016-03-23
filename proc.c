@@ -273,10 +273,37 @@ struct proc* findreadyprocess(int *index, uint *priority) {
   int i;
   struct proc* proc2;
 notfound:
-  for (i = 0; i < NPROC - 1; i++) {
+  for (i = 0; i < NPROC; i++) {
     proc2 = &ptable.proc[(*index + i) % NPROC];
     if (proc2->state == RUNNABLE && proc2->priority == *priority) {
       *index = (*index + 1) % NPROC;
+      return proc2; // found a runnable process with appropriate priority
+    }
+  }
+  if (*priority == 1) {//did not find any process on any of the prorities
+    *priority = 3;
+    return 0;
+  }
+  else {
+    *priority -= 1; //will try to find a process at a lower priority
+    goto notfound;
+  }
+  return 0;
+}
+#endif
+
+#ifdef DML
+/*
+  this method will find the next process to run
+*/
+struct proc* findreadyprocess(int *index, uint *priority) {
+  int i;
+  struct proc* proc2;
+notfound:
+  for (i = 0; i < NPROC; i++) {
+    proc2 = &ptable.proc[(*index + i) % NPROC];
+    if (proc2->state == RUNNABLE && proc2->priority == *priority) {
+      *index = (*index + 1 + i) % NPROC;
       return proc2; // found a runnable process with appropriate priority
     }
   }
@@ -304,7 +331,7 @@ void
 scheduler(void)
 {
   struct proc *p;
-  //struct proc *minP = null;
+  int index = 0;
 
   for(;;){
     // Enable interrupts on this processor.
@@ -333,7 +360,6 @@ scheduler(void)
       // It should have changed its p->state before coming back.
       proc = 0;
     }
-    // release(&ptable.lock);
     #else
 
     #ifdef FCFS
@@ -363,7 +389,6 @@ scheduler(void)
 
     #ifdef SML
     uint priority = 3;
-    int index = 0;
     p = findreadyprocess(&index, &priority);
     if (p == 0) {
       release(&ptable.lock);
@@ -376,8 +401,20 @@ scheduler(void)
     switchkvm();
     proc = 0;
     #else
+
     #ifdef DML
-    // code...
+    uint priority = 3;
+    p = findreadyprocess(&index, &priority);
+    if (p == 0) {
+      release(&ptable.lock);
+      continue;
+    }
+    proc = p;
+    switchuvm(p);
+    p->state = RUNNING;
+    swtch(&cpu->scheduler, proc->context);
+    switchkvm();
+    proc = 0;
     #endif
     #endif
     #endif
