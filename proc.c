@@ -89,6 +89,7 @@ userinit(void)
   inituvm(p->pgdir, _binary_initcode_start, (int)_binary_initcode_size);
   p->sz = PGSIZE;
   p->ctime = ticks;
+  p->priority = 2;
   memset(p->tf, 0, sizeof(*p->tf));
   p->tf->cs = (SEG_UCODE << 3) | DPL_USER;
   p->tf->ds = (SEG_UDATA << 3) | DPL_USER;
@@ -150,7 +151,7 @@ fork(void)
 
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
-  np->ctime = ticks;  // set the new process's creation time
+  np->priority = proc->priority;
   for(i = 0; i < NOFILE; i++)
     if(proc->ofile[i])
       np->ofile[i] = filedup(proc->ofile[i]);
@@ -305,23 +306,19 @@ scheduler(void)
       // It should have changed its p->state before coming back.
       proc = 0;
     }
+    #else
+    #ifdef FCFS
+    // code...
+    #else
+    #ifdef SML
+    // code...
+    #else
+    #ifdef DML
+    // code...
     #endif
-
-
-
-    /*# not working at the moment....
-    ifdef FCFS
-      for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-        if(p->state != RUNNABLE)
-          continue;
-      if (minP==null)
-        minP = p;
-      else
-        if(minp.ctime<p.ctime)
-          minp = p;
-
-
-    #endif*/
+    #endif
+    #endif
+    #endif
 
     release(&ptable.lock);
 
