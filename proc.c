@@ -6,6 +6,7 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#define NULL 0
 
 struct {
   struct spinlock lock;
@@ -330,10 +331,39 @@ scheduler(void)
       // It should have changed its p->state before coming back.
       proc = 0;
     }
+    release(&ptable.lock);
     #else
+
     #ifdef FCFS
-    // code...
+        struct proc *minP = NULL;
+        for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+          if(p->state == RUNNABLE){
+            if (minP!=NULL){
+              if(p->ctime < minP->ctime)
+                minP = p;
+            }
+            else
+              minP = p;
+          }
+        }
+        // cprintf("**: ");
+        // cprintf(p->state);
+        // cprintf("  \n");
+        if (minP!=NULL){
+          p = minP;//the process with the smallest creation time
+          proc = p;
+          switchuvm(p);
+          p->state = RUNNING;
+          swtch(&cpu->scheduler, proc->context);
+          switchkvm();
+          // Process is done running for now.
+          // It should have changed its p->state before coming back.
+           proc = 0;
+       }
+      release(&ptable.lock);
+
     #else
+
     #ifdef SML
     uint priority = 3;
     int index = 0;
