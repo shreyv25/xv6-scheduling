@@ -267,6 +267,9 @@ int wait2(int *retime, int *rutime, int *stime) {
 }
 
 #ifdef SML
+/*
+  this method will find the next process to run
+*/
 struct proc* findreadyprocess(int *index, uint *priority) {
   int i;
   struct proc* proc;
@@ -278,12 +281,12 @@ notfound:
       return proc; // found a runnable process with appropriate priority
     }
   }
-  if (*priority == 1) {
+  if (*priority == 1) {//did not find any process on any of the prorities
     *priority = 3;
     return 0;
   }
   else {
-    *priority -= 1;
+    *priority -= 1; //will try to find a process at a lower priority
     goto notfound;
   }
   return proc;
