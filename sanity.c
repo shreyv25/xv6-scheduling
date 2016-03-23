@@ -1,16 +1,55 @@
 #include "types.h"
 #include "user.h"
 
+
 int
 main(int argc, char *argv[])
 {
-	if (argc!=2)
+	int i, n, j = 0, k;
+	if (argc!=2){
 		    printf(1, "should get number(n) as parameter!\n");
-	else
-		    printf(1, "got num %x\n", argv[1]);
-  // int i;
+		    exit();
+		 }
 
-  // for(i = 1; i < argc; i++)
-  //   printf(1, "%s%s", argv[i], i+1 < argc ? " " : "\n");
+	n = atoi(argv[1]);
+	i = n; //unimportant
+	int pd;
+	for(i = 0; i< 3*n; i++){
+		j = (j==2) ? 0 : 3;
+		//printf(1, "%d\n", i);
+		pd = fork();
+		if (pd == 0){//child
+			switch(j){
+				case (0): //CPU‐bound process (CPU):
+				for( k =0; k< 100; k++){
+					for (j=0; j<1000000; j++){}
+				}
+				printf(1, "yo!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11\n");
+					break;
+				case (1): //short tasks based CPU‐bound process (S‐CPU):
+					for( k =0; k< 100; k++){
+						for (j=0; j<1000000; j++){}
+					}
+					//	yield();   														TODO GILAD
+					break;
+
+				case (2):// I/O bound process (IO)
+					for( k =0; k< 100; k++){
+						sleep(1);
+					}
+					break;
+			}
+			exit();
+		}
+		if (pd>0){//father
+			continue; 
+		}
+		printf(1, "panic!!! fork falild in sanity!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+	}
+
+
+
   exit();
 }
+
+
