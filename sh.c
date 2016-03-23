@@ -204,6 +204,9 @@ main(void)
         printf(2, "cannot cd %s\n", buf+3);
       continue;
     }
+    if (buf[0] == 'k') {
+      continue;
+    }
     if(buf[0] == 'h' && buf[1] == 'i' && buf[2] == 's' && buf[3] == 't'
         && buf[4] == 'o' && buf[5] == 'r' && buf[6] == 'y') {
       history1();

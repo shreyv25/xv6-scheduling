@@ -49,6 +49,17 @@ found:
   p->state = EMBRYO;
   p->pid = nextpid++;
   p->ctime = ticks;
+  p->retime = 0;
+  p->rutime = 0;
+  p->stime = 0;
+  p->fake[0] = '*';
+  p->fake[1] = '*';
+  p->fake[2] = '*';
+  p->fake[3] = '*';
+  p->fake[4] = '*';
+  p->fake[5] = '*';
+  p->fake[6] = '*';
+  p->fake[7] = '*';
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -412,6 +423,7 @@ scheduler(void)
     proc = p;
     switchuvm(p);
     p->state = RUNNING;
+    p->tickcounter = 0;
     swtch(&cpu->scheduler, proc->context);
     switchkvm();
     proc = 0;
@@ -520,8 +532,12 @@ wakeup1(void *chan)
   struct proc *p;
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    if(p->state == SLEEPING && p->chan == chan)
+    if(p->state == SLEEPING && p->chan == chan) {
       p->state = RUNNABLE;
+      #ifdef DML
+      p->priority = 3; // relevant for DML - process waited for I\O, and now it's ready to run again
+      #endif
+    }
 }
 
 // Wake up all processes sleeping on chan.
@@ -626,8 +642,16 @@ int set_prio(int priority) {
   return 0;
 }
 
-void resettickscycle(int *counter) {
+void decpriority(void) {
+  // acquire(&ptable.lock);
+  proc->priority = proc->priority == 1 ? 1 : proc->priority - 1;
+  // release(&ptable.lock);
+}
+
+int inctickcounter() {
+  int res;
   acquire(&ptable.lock);
-  *counter = 0;
+  res = ++proc->tickcounter;
   release(&ptable.lock);
+  return res;
 }
