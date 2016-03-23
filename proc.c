@@ -345,9 +345,6 @@ scheduler(void)
               minP = p;
           }
         }
-        // cprintf("**: ");
-        // cprintf(p->state);
-        // cprintf("  \n");
         if (minP!=NULL){
           p = minP;//the process with the smallest creation time
           proc = p;
@@ -359,7 +356,6 @@ scheduler(void)
           // It should have changed its p->state before coming back.
            proc = 0;
        }
-      // release(&ptable.lock);
     #else
 
     #ifdef SML
@@ -370,13 +366,12 @@ scheduler(void)
       release(&ptable.lock);
       continue;
     }
-      // continue;
     proc = p;
     switchuvm(p);
     p->state = RUNNING;
     swtch(&cpu->scheduler, proc->context);
     switchkvm();
-    // release(&ptable.lock);
+    proc = 0;
     #else
     #ifdef DML
     // code...
