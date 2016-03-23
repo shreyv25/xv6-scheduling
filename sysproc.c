@@ -118,3 +118,9 @@ int sys_history(void) {
   argint(1, &historyId);
   return history(buffer, historyId);
 }
+
+int sys_set_prio(void) {
+  int priority;
+  argint(0, &priority);
+  return set_prio(priority);
+}

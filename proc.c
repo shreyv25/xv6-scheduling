@@ -583,3 +583,12 @@ void updatestatistics() {
   }
   release(&ptable.lock);
 }
+
+int set_prio(int priority) {
+  if (priority < 1 || priority > 3)
+    return -1;
+  acquire(&ptable.lock);
+  proc->priority = priority;
+  release(&ptable.lock);
+  return 0;
+}

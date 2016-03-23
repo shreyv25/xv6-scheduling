@@ -169,16 +169,20 @@ main(void)
   printf(1, "Selected scheduling policy: ");
   #ifdef DEFAULT
     printf(1, "default\n");
-  #endif
+  #else
   #ifdef FCFS
     printf(1, "FCFS\n");
-  #endif
+  #else
   #ifdef SML
     printf(1, "SML\n");
-  #endif
+  #else
   #ifdef DML
     printf(1, "DML\n");
   #endif
+  #endif
+  #endif
+  #endif
+
   static char buf[INPUT_BUF];
   int fd;
   int retime, rutime, stime,pid;
