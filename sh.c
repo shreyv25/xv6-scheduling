@@ -205,7 +205,7 @@ main(void)
       continue;
     }
     if(buf[0] == 'h' && buf[1] == 'i' && buf[2] == 's' && buf[3] == 't'
-        && buf[4] == 'o' && buf[5] == 'r' && buf[6] == 'y') {
+        && buf[4] == 'o' && buf[5] == 'r' && buf[6] == 'y' && buf[7] == '\n') {
       history1();
       continue;
     }
