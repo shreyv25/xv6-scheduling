@@ -37,8 +37,8 @@ main(int argc, char *argv[])
 				case 1: //short tasks based CPU‐bound process (S‐CPU):
 					for (k = 0; k < 100; k++){
 						for (j = 0; j < 1000000; j++){}
+						yield();
 					}
-					yield();
 					break;
 				case 2:// simulate I/O bound process (IO)
 					for(k = 0; k < 100; k++){
