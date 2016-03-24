@@ -185,7 +185,7 @@ main(void)
 
   static char buf[INPUT_BUF];
   int fd;
-  int retime, rutime, stime,pid;
+  // int retime, rutime, stime,pid;
   // Assumes three file descriptors open.
   while((fd = open("console", O_RDWR)) >= 0){
     if(fd >= 3){
@@ -217,9 +217,9 @@ main(void)
   if(fork1() == 0)
       runcmd(parsecmd(buf));
   else {
-    // wait();
-    pid = wait2(&retime, &rutime, &stime);
-    printf(1, "pid:%d retime:%d rutime%d stime:%d\n", pid, retime, rutime, stime);
+    wait();
+    // pid = wait2(&retime, &rutime, &stime);
+    // printf(1, "pid:%d retime:%d rutime%d stime:%d\n", pid, retime, rutime, stime);
   }
   }
   exit();
