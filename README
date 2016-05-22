@@ -1,16 +1,19 @@
-# xv6 extensions
-This project is part of an Operating Systems course taken in BGU. The main objective is to take xv6, a simple unix v6 implementation, and
-extend it to have more functionality.
+~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+xv6 console enhancements and scheduling policies
+This project is part of an Operating Systems course taken in BGU. We vastly improve the console by adding caret navigation and shell history, and also support 4 scheduling policies.
+These policies are invoked with the SCHEDFLAG flag when launching, i.e.
+
+$ make qemu SCHEDFLAG=SML
+
+The 4 policies are: DEFAULT, FCFS, SML, DML. If the flag isn't defined at launch, then DEFAULT (Round-Robin) is used.
+
+For further information, consult the assignment description at https://www.cs.bgu.ac.il/~os162/Assignments/Assignment_1
 
 The original README is left intact below.
 
-List of additions:
-1. Caret navigation in the terminal: you can move the caret left\right with the respective arrows.
-2. Command history of the last 16 commands: you can scroll through them with the up\down arrows.
-
 Copyright 2016 Asaf Chelouche, Gilad Herzfeld
 
-----------------------------------------------------------------------------------
+~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
 
 xv6 is a re-implementation of Dennis Ritchie's and Ken Thompson's Unix
 Version 6 (v6).  xv6 loosely follows the structure and style of v6,

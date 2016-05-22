@@ -243,7 +243,7 @@ void copyCharsToBeMoved() {
   uint n = input.rightmost - input.r;
   uint i;
   for (i = 0; i < n; i++)
-    charsToBeMoved[i] = input.buf[(input.r + i) % INPUT_BUF];
+    charsToBeMoved[i] = input.buf[(input.e + i) % INPUT_BUF];
 }
 
 /*
