@@ -1,10 +1,6 @@
 #include "syscall.h"
 #include "traps.h"
 
-#these are the basic calls for system functions - these are the calls made from user mode
-#the parmeters given from the user are pushed to the stack and retrieved in the sys_*** implementation
-# - moving the "System call number" into eax and doing interupt
-
 #define SYSCALL(name) \
   .globl name; \
   name: \
@@ -33,7 +29,3 @@ SYSCALL(getpid)
 SYSCALL(sbrk)
 SYSCALL(sleep)
 SYSCALL(uptime)
-SYSCALL(history)
-SYSCALL(wait2)
-SYSCALL(set_prio)
-SYSCALL(yield)																

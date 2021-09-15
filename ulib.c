@@ -5,7 +5,7 @@
 #include "x86.h"
 
 char*
-strcpy(char *s, char *t)
+strcpy(char *s, const char *t)
 {
   char *os;
 
@@ -24,7 +24,7 @@ strcmp(const char *p, const char *q)
 }
 
 uint
-strlen(char *s)
+strlen(const char *s)
 {
   int n;
 
@@ -55,7 +55,7 @@ gets(char *buf, int max)
   int i, cc;
   char c;
 
-  for(i=0; i < max; ){
+  for(i=0; i+1 < max; ){
     cc = read(0, &c, 1);
     if(cc < 1)
       break;
@@ -63,15 +63,12 @@ gets(char *buf, int max)
     if(c == '\n' || c == '\r')
       break;
   }
-  if (i < max - 1)
-    buf[i] = '\0';
-  else
-    buf[max - 1] = '\0';
+  buf[i] = '\0';
   return buf;
 }
 
 int
-stat(char *n, struct stat *st)
+stat(const char *n, struct stat *st)
 {
   int fd;
   int r;
@@ -96,9 +93,10 @@ atoi(const char *s)
 }
 
 void*
-memmove(void *vdst, void *vsrc, int n)
+memmove(void *vdst, const void *vsrc, int n)
 {
-  char *dst, *src;
+  char *dst;
+  const char *src;
 
   dst = vdst;
   src = vsrc;
